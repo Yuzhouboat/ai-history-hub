@@ -131,3 +131,54 @@ func TestReal_FileExists(t *testing.T) {
 		t.Errorf("expected FileExists to be true after file is written")
 	}
 }
+
+func TestReal_RemoveFileDeletesWrittenFile(t *testing.T) {
+	sys := system.NewReal()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "present.txt")
+	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		t.Fatalf("setup WriteFile: %v", err)
+	}
+
+	if err := sys.RemoveFile(path); err != nil {
+		t.Fatalf("RemoveFile: %v", err)
+	}
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("expected file to be gone, stat err = %v", err)
+	}
+}
+
+func TestReal_RemoveFileMissingReturnsNotExist(t *testing.T) {
+	sys := system.NewReal()
+	dir := t.TempDir()
+
+	err := sys.RemoveFile(filepath.Join(dir, "missing.txt"))
+
+	if !os.IsNotExist(err) {
+		t.Fatalf("err = %v, want IsNotExist", err)
+	}
+}
+
+func TestReal_Executable(t *testing.T) {
+	sys := system.NewReal()
+
+	got, err := sys.Executable()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty executable path")
+	}
+}
+
+func TestReal_Now(t *testing.T) {
+	sys := system.NewReal()
+
+	got := sys.Now()
+
+	if got.IsZero() {
+		t.Error("expected a non-zero current time")
+	}
+}

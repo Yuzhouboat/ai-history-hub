@@ -2,7 +2,6 @@ package cli_test
 
 import (
 	"bytes"
-	"errors"
 	"strings"
 	"testing"
 
@@ -52,20 +51,5 @@ func TestRun_UnknownSubcommandErrors(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Usage:") {
 		t.Errorf("stderr = %q, want usage on unknown subcommand", stderr.String())
-	}
-}
-
-func TestRun_RecognizedSubcommandsAreStubbedThroughFakeSystem(t *testing.T) {
-	for _, name := range []string{"status", "uninstall"} {
-		t.Run(name, func(t *testing.T) {
-			fake := system.NewFake()
-			var stdout, stderr bytes.Buffer
-
-			err := cli.Run(fake, []string{name}, &stdout, &stderr)
-
-			if !errors.Is(err, cli.ErrNotImplemented) {
-				t.Fatalf("%s: err = %v, want ErrNotImplemented", name, err)
-			}
-		})
 	}
 }

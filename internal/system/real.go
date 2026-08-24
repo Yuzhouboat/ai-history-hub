@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
 
 // Real is the System implementation backed by the actual OS.
@@ -76,4 +77,16 @@ func (r *Real) FileExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func (r *Real) RemoveFile(path string) error {
+	return os.Remove(path)
+}
+
+func (r *Real) Executable() (string, error) {
+	return os.Executable()
+}
+
+func (r *Real) Now() time.Time {
+	return time.Now()
 }

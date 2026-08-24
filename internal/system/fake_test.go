@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"claude-backup/internal/system"
 )
@@ -211,5 +212,86 @@ func TestFake_FileExists(t *testing.T) {
 	}
 	if !exists {
 		t.Errorf("expected true after write")
+	}
+}
+
+func TestFake_RemoveFileDeletesWrittenFile(t *testing.T) {
+	fake := system.NewFake()
+	if err := fake.WriteFile("/config/claude-backup.json", []byte("{}"), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	if err := fake.RemoveFile("/config/claude-backup.json"); err != nil {
+		t.Fatalf("RemoveFile: %v", err)
+	}
+
+	exists, err := fake.FileExists("/config/claude-backup.json")
+	if err != nil {
+		t.Fatalf("FileExists: %v", err)
+	}
+	if exists {
+		t.Error("expected file to be gone after RemoveFile")
+	}
+	if len(fake.Removals) != 1 || fake.Removals[0] != "/config/claude-backup.json" {
+		t.Errorf("Removals = %v, want [/config/claude-backup.json]", fake.Removals)
+	}
+}
+
+func TestFake_RemoveFileMissingReturnsNotExist(t *testing.T) {
+	fake := system.NewFake()
+
+	err := fake.RemoveFile("/does/not/exist.json")
+
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("err = %v, want wrapping os.ErrNotExist", err)
+	}
+}
+
+func TestFake_ExecutableDefault(t *testing.T) {
+	fake := system.NewFake()
+
+	got, err := fake.Executable()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty default executable path")
+	}
+}
+
+func TestFake_ExecutableOverride(t *testing.T) {
+	fake := system.NewFake()
+	fake.ExecutableValue = "/opt/claude-backup/claude-backup"
+
+	got, err := fake.Executable()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "/opt/claude-backup/claude-backup" {
+		t.Errorf("executable = %q, want override", got)
+	}
+}
+
+func TestFake_NowDefault(t *testing.T) {
+	fake := system.NewFake()
+
+	got := fake.Now()
+
+	if got.IsZero() {
+		t.Error("expected a non-zero default time")
+	}
+}
+
+func TestFake_NowOverride(t *testing.T) {
+	fake := system.NewFake()
+	want := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
+	fake.NowValue = want
+
+	got := fake.Now()
+
+	if !got.Equal(want) {
+		t.Errorf("now = %v, want %v", got, want)
 	}
 }

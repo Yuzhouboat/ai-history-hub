@@ -3,7 +3,13 @@ package system
 import (
 	"fmt"
 	"os"
+	"time"
 )
+
+// fakeReferenceTime is the default Now() value when NowValue is unset,
+// chosen to be an obviously-fake fixed point so a forgotten override in a
+// time-sensitive test is easy to spot.
+var fakeReferenceTime = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 // Command records one invocation made through Fake.Run.
 type Command struct {
@@ -45,6 +51,16 @@ type Fake struct {
 	// HomeDirValue is returned by UserHomeDir. Defaults to "/home/fake" if
 	// unset.
 	HomeDirValue string
+
+	// ExecutableValue is returned by Executable. Defaults to
+	// "/usr/local/bin/claude-backup" if unset.
+	ExecutableValue string
+
+	// NowValue is returned by Now. Defaults to fakeReferenceTime if unset.
+	NowValue time.Time
+
+	// Removals records every path deleted via RemoveFile, in call order.
+	Removals []string
 }
 
 // NewFake returns an empty Fake System.
@@ -103,4 +119,27 @@ func (f *Fake) ReadFile(path string) ([]byte, error) {
 func (f *Fake) FileExists(path string) (bool, error) {
 	_, ok := f.Files[path]
 	return ok, nil
+}
+
+func (f *Fake) RemoveFile(path string) error {
+	if _, ok := f.Files[path]; !ok {
+		return fmt.Errorf("%s: %w", path, os.ErrNotExist)
+	}
+	delete(f.Files, path)
+	f.Removals = append(f.Removals, path)
+	return nil
+}
+
+func (f *Fake) Executable() (string, error) {
+	if f.ExecutableValue != "" {
+		return f.ExecutableValue, nil
+	}
+	return "/usr/local/bin/claude-backup", nil
+}
+
+func (f *Fake) Now() time.Time {
+	if !f.NowValue.IsZero() {
+		return f.NowValue
+	}
+	return fakeReferenceTime
 }

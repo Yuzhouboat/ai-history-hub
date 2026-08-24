@@ -6,7 +6,10 @@
 // use, Fake backs it with an in-memory store for tests.
 package system
 
-import "os"
+import (
+	"os"
+	"time"
+)
 
 // CommandResult is the outcome of running an external command through
 // System.Run.
@@ -41,9 +44,22 @@ type System interface {
 	// FileExists reports whether path has been written.
 	FileExists(path string) (bool, error)
 
+	// RemoveFile deletes the file at path. It returns an error wrapping
+	// os.ErrNotExist if path has not been written.
+	RemoveFile(path string) error
+
 	// Hostname reports the local machine's hostname.
 	Hostname() (string, error)
 
 	// UserHomeDir reports the current user's home directory.
 	UserHomeDir() (string, error)
+
+	// Executable reports the path to the currently running claude-backup
+	// binary, for scheduler configs (launchd/systemd) that need to invoke
+	// it directly.
+	Executable() (string, error)
+
+	// Now reports the current time, so schedule computations (e.g. "next
+	// run") are deterministic under the fake System in tests.
+	Now() time.Time
 }

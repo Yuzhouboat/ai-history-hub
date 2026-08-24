@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"claude-backup/internal/system"
@@ -27,8 +28,8 @@ func (r *repeatedFlag) Set(v string) error {
 }
 
 // runInstall validates rclone is present, resolves or creates the rclone
-// remote, and persists the resolved remote + exclusion list to config.
-// The platform scheduler (launchd/systemd) is wired up in tickets 03/04.
+// remote, persists the resolved remote + exclusion list to config, and
+// activates the daily backup on the host platform's own scheduler.
 func runInstall(sys system.System, args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("install", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -54,6 +55,14 @@ func runInstall(sys system.System, args []string, stdout, stderr io.Writer) erro
 	cfg := Config{Remote: *remote, Exclude: exclude.values}
 	if err := saveConfig(sys, homeDir, cfg); err != nil {
 		return fmt.Errorf("install: saving config: %w", err)
+	}
+
+	sched, err := schedulerFor(runtime.GOOS)
+	if err != nil {
+		return fmt.Errorf("install: selecting scheduler: %w", err)
+	}
+	if err := sched.install(sys, homeDir); err != nil {
+		return fmt.Errorf("install: scheduling daily sync: %w", err)
 	}
 
 	fmt.Fprintf(stdout, "claude-backup configured with remote %q\n", *remote)
