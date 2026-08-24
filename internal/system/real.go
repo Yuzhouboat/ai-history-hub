@@ -38,6 +38,22 @@ func (r *Real) Run(name string, args ...string) (CommandResult, error) {
 	return result, err
 }
 
+func (r *Real) RunInteractive(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func (r *Real) Hostname() (string, error) {
+	return os.Hostname()
+}
+
+func (r *Real) UserHomeDir() (string, error) {
+	return os.UserHomeDir()
+}
+
 func (r *Real) WriteFile(path string, content []byte, perm os.FileMode) error {
 	if dir := filepath.Dir(path); dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {

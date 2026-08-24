@@ -104,6 +104,92 @@ func TestFake_ReadFileMissingReturnsNotExist(t *testing.T) {
 	}
 }
 
+func TestFake_RunInteractiveRecordsCommand(t *testing.T) {
+	fake := system.NewFake()
+
+	if err := fake.RunInteractive("rclone", "config"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(fake.InteractiveCommands) != 1 {
+		t.Fatalf("got %d recorded interactive commands, want 1", len(fake.InteractiveCommands))
+	}
+	if fake.InteractiveCommands[0].Name != "rclone" || fake.InteractiveCommands[0].Args[0] != "config" {
+		t.Errorf("recorded command = %+v, want rclone config", fake.InteractiveCommands[0])
+	}
+}
+
+func TestFake_RunInteractiveFuncControlsResult(t *testing.T) {
+	fake := system.NewFake()
+	wantErr := errors.New("wizard cancelled")
+	fake.RunInteractiveFunc = func(name string, args ...string) error {
+		return wantErr
+	}
+
+	err := fake.RunInteractive("rclone", "config")
+
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("err = %v, want %v", err, wantErr)
+	}
+	if len(fake.InteractiveCommands) != 1 {
+		t.Errorf("expected command still recorded despite RunInteractiveFunc, got %d", len(fake.InteractiveCommands))
+	}
+}
+
+func TestFake_HostnameDefault(t *testing.T) {
+	fake := system.NewFake()
+
+	got, err := fake.Hostname()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty default hostname")
+	}
+}
+
+func TestFake_HostnameOverride(t *testing.T) {
+	fake := system.NewFake()
+	fake.HostnameValue = "my-laptop"
+
+	got, err := fake.Hostname()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "my-laptop" {
+		t.Errorf("hostname = %q, want %q", got, "my-laptop")
+	}
+}
+
+func TestFake_UserHomeDirDefault(t *testing.T) {
+	fake := system.NewFake()
+
+	got, err := fake.UserHomeDir()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty default home dir")
+	}
+}
+
+func TestFake_UserHomeDirOverride(t *testing.T) {
+	fake := system.NewFake()
+	fake.HomeDirValue = "/home/someone"
+
+	got, err := fake.UserHomeDir()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "/home/someone" {
+		t.Errorf("home dir = %q, want %q", got, "/home/someone")
+	}
+}
+
 func TestFake_FileExists(t *testing.T) {
 	fake := system.NewFake()
 

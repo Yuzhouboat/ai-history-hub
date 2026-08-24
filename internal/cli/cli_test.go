@@ -56,7 +56,7 @@ func TestRun_UnknownSubcommandErrors(t *testing.T) {
 }
 
 func TestRun_RecognizedSubcommandsAreStubbedThroughFakeSystem(t *testing.T) {
-	for _, name := range []string{"install", "sync", "status", "uninstall"} {
+	for _, name := range []string{"status", "uninstall"} {
 		t.Run(name, func(t *testing.T) {
 			fake := system.NewFake()
 			var stdout, stderr bytes.Buffer

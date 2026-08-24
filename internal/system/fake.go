@@ -29,6 +29,22 @@ type Fake struct {
 	// RunFunc, if set, computes the result for each Run call. Commands are
 	// recorded regardless of whether RunFunc is set.
 	RunFunc func(name string, args ...string) (CommandResult, error)
+
+	// InteractiveCommands records every RunInteractive invocation.
+	InteractiveCommands []Command
+
+	// RunInteractiveFunc, if set, computes the result for each
+	// RunInteractive call. Commands are recorded regardless of whether
+	// RunInteractiveFunc is set.
+	RunInteractiveFunc func(name string, args ...string) error
+
+	// HostnameValue is returned by Hostname. Defaults to "fake-host" if
+	// unset.
+	HostnameValue string
+
+	// HomeDirValue is returned by UserHomeDir. Defaults to "/home/fake" if
+	// unset.
+	HomeDirValue string
 }
 
 // NewFake returns an empty Fake System.
@@ -42,6 +58,28 @@ func (f *Fake) Run(name string, args ...string) (CommandResult, error) {
 		return f.RunFunc(name, args...)
 	}
 	return CommandResult{}, nil
+}
+
+func (f *Fake) RunInteractive(name string, args ...string) error {
+	f.InteractiveCommands = append(f.InteractiveCommands, Command{Name: name, Args: args})
+	if f.RunInteractiveFunc != nil {
+		return f.RunInteractiveFunc(name, args...)
+	}
+	return nil
+}
+
+func (f *Fake) Hostname() (string, error) {
+	if f.HostnameValue != "" {
+		return f.HostnameValue, nil
+	}
+	return "fake-host", nil
+}
+
+func (f *Fake) UserHomeDir() (string, error) {
+	if f.HomeDirValue != "" {
+		return f.HomeDirValue, nil
+	}
+	return "/home/fake", nil
 }
 
 func (f *Fake) WriteFile(path string, content []byte, _ os.FileMode) error {

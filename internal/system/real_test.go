@@ -60,6 +60,52 @@ func TestReal_WriteFileThenReadFileRoundTrips(t *testing.T) {
 	}
 }
 
+func TestReal_RunInteractiveSucceeds(t *testing.T) {
+	sys := system.NewReal()
+
+	err := sys.RunInteractive("sh", "-c", "exit 0")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestReal_RunInteractiveReportsFailure(t *testing.T) {
+	sys := system.NewReal()
+
+	err := sys.RunInteractive("sh", "-c", "exit 1")
+
+	if err == nil {
+		t.Fatal("expected an error for non-zero exit")
+	}
+}
+
+func TestReal_Hostname(t *testing.T) {
+	sys := system.NewReal()
+
+	got, err := sys.Hostname()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty hostname")
+	}
+}
+
+func TestReal_UserHomeDir(t *testing.T) {
+	sys := system.NewReal()
+
+	got, err := sys.UserHomeDir()
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got == "" {
+		t.Error("expected a non-empty home directory")
+	}
+}
+
 func TestReal_FileExists(t *testing.T) {
 	sys := system.NewReal()
 	dir := t.TempDir()

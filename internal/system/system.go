@@ -24,6 +24,12 @@ type System interface {
 	// returned CommandResult.
 	Run(name string, args ...string) (CommandResult, error)
 
+	// RunInteractive executes an external command with stdin, stdout, and
+	// stderr connected directly to the calling process's own, for wizards
+	// that need real terminal interaction (e.g. the `rclone config`
+	// wizard). It reports only whether the command succeeded.
+	RunInteractive(name string, args ...string) error
+
 	// WriteFile writes content to path, creating parent directories as
 	// needed.
 	WriteFile(path string, content []byte, perm os.FileMode) error
@@ -34,4 +40,10 @@ type System interface {
 
 	// FileExists reports whether path has been written.
 	FileExists(path string) (bool, error)
+
+	// Hostname reports the local machine's hostname.
+	Hostname() (string, error)
+
+	// UserHomeDir reports the current user's home directory.
+	UserHomeDir() (string, error)
 }
