@@ -40,6 +40,37 @@ func TestRun_HelpFlagPrintsUsage(t *testing.T) {
 	}
 }
 
+func TestRun_VersionPrintsVersion(t *testing.T) {
+	fake := system.NewFake()
+	var stdout, stderr bytes.Buffer
+
+	err := cli.Run(fake, []string{"version"}, &stdout, &stderr)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "claude-backup") {
+		t.Errorf("version output = %q, want it to mention claude-backup", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), cli.Version) {
+		t.Errorf("version output = %q, want it to contain the current cli.Version %q", stdout.String(), cli.Version)
+	}
+}
+
+func TestRun_VersionFlagPrintsVersion(t *testing.T) {
+	fake := system.NewFake()
+	var stdout, stderr bytes.Buffer
+
+	err := cli.Run(fake, []string{"--version"}, &stdout, &stderr)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "claude-backup") {
+		t.Errorf("version output = %q, want it to mention claude-backup", stdout.String())
+	}
+}
+
 func TestRun_UnknownSubcommandErrors(t *testing.T) {
 	fake := system.NewFake()
 	var stdout, stderr bytes.Buffer

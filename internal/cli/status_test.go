@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +79,85 @@ func TestStatus_ReportsLastSyncTimeFromLog(t *testing.T) {
 	out := stdout.String()
 	if strings.Contains(out, "never") {
 		t.Errorf("status output = %q, want a recorded last sync time after sync ran", out)
+	}
+}
+
+func TestStatus_ReportsRemoteAndExcludedProjects(t *testing.T) {
+	fake := system.NewFake()
+	fake.HomeDirValue = "/home/fake"
+	fake.RunFunc = func(name string, args ...string) (system.CommandResult, error) {
+		return system.CommandResult{Stdout: "s3remote:\n"}, nil
+	}
+	var stdout, stderr bytes.Buffer
+	install := []string{"install", "--remote", "s3remote", "--exclude", "side-project"}
+	if err := cli.Run(fake, install, &stdout, &stderr); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+	stdout.Reset()
+
+	err := cli.Run(fake, []string{"status"}, &stdout, &stderr)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "remote: s3remote") {
+		t.Errorf("status output = %q, want it to report the configured remote", out)
+	}
+	if !strings.Contains(out, "side-project") {
+		t.Errorf("status output = %q, want it to report the excluded project", out)
+	}
+}
+
+func TestStatus_ReportsExcludedProjectsNoneWhenListEmpty(t *testing.T) {
+	fake := system.NewFake()
+	fake.HomeDirValue = "/home/fake"
+	fake.RunFunc = func(name string, args ...string) (system.CommandResult, error) {
+		return system.CommandResult{Stdout: "s3remote:\n"}, nil
+	}
+	var stdout, stderr bytes.Buffer
+	if err := cli.Run(fake, []string{"install", "--remote", "s3remote"}, &stdout, &stderr); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+	stdout.Reset()
+
+	err := cli.Run(fake, []string{"status"}, &stdout, &stderr)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(stdout.String(), "excluded projects: none") {
+		t.Errorf("status output = %q, want it to report no excluded projects", stdout.String())
+	}
+}
+
+func TestStatus_ReportsLastSyncFailureWithError(t *testing.T) {
+	fake := system.NewFake()
+	fake.HomeDirValue = "/home/fake"
+	fake.RunFunc = func(name string, args ...string) (system.CommandResult, error) {
+		if name == "rclone" && len(args) > 0 && args[0] == "copy" {
+			return system.CommandResult{ExitCode: 1}, errors.New("connection refused")
+		}
+		return system.CommandResult{Stdout: "s3remote:\n"}, nil
+	}
+	var stdout, stderr bytes.Buffer
+	if err := cli.Run(fake, []string{"install", "--remote", "s3remote"}, &stdout, &stderr); err != nil {
+		t.Fatalf("install: %v", err)
+	}
+	_ = cli.Run(fake, []string{"sync"}, &stdout, &stderr)
+	stdout.Reset()
+
+	err := cli.Run(fake, []string{"status"}, &stdout, &stderr)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "last sync:") || !strings.Contains(out, "(failed)") {
+		t.Errorf("status output = %q, want the last sync flagged as failed", out)
+	}
+	if !strings.Contains(out, "last error: connection refused") {
+		t.Errorf("status output = %q, want it to surface the failure reason", out)
 	}
 }
 

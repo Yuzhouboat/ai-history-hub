@@ -32,3 +32,41 @@ func TestAppendLogAppendsAcrossCalls(t *testing.T) {
 		t.Errorf("second line = %q, want it to contain %q", lines[1], "sync done")
 	}
 }
+
+func TestLastSyncAttempt_NoLogYet(t *testing.T) {
+	fake := system.NewFake()
+
+	_, ok := lastSyncAttempt(fake, "/home/fake")
+
+	if ok {
+		t.Fatal("expected ok=false when the sync log doesn't exist yet")
+	}
+}
+
+func TestLastSyncAttempt_ReturnsMostRecentOutcomeIgnoringStartLines(t *testing.T) {
+	fake := system.NewFake()
+	if err := appendLog(fake, "/home/fake", "sync start"); err != nil {
+		t.Fatalf("appendLog: %v", err)
+	}
+	if err := appendLog(fake, "/home/fake", "sync done"); err != nil {
+		t.Fatalf("appendLog: %v", err)
+	}
+	if err := appendLog(fake, "/home/fake", "sync start"); err != nil {
+		t.Fatalf("appendLog: %v", err)
+	}
+	if err := appendLog(fake, "/home/fake", "sync failed: connection refused"); err != nil {
+		t.Fatalf("appendLog: %v", err)
+	}
+
+	attempt, ok := lastSyncAttempt(fake, "/home/fake")
+
+	if !ok {
+		t.Fatal("expected ok=true")
+	}
+	if attempt.Success {
+		t.Error("expected the most recent attempt to be reported as a failure")
+	}
+	if attempt.Error != "connection refused" {
+		t.Errorf("attempt.Error = %q, want %q", attempt.Error, "connection refused")
+	}
+}
