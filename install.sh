@@ -42,11 +42,16 @@ curl -fsSL "$url" -o "${tmpdir}/${archive}"
 tar -xzf "${tmpdir}/${archive}" -C "$tmpdir" "$BIN"
 
 install_dir="/usr/local/bin"
+installed=0
 if [ -w "$install_dir" ]; then
   mv "${tmpdir}/${BIN}" "${install_dir}/${BIN}"
-elif command -v sudo >/dev/null 2>&1; then
+  installed=1
+elif command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then
   sudo mv "${tmpdir}/${BIN}" "${install_dir}/${BIN}"
-else
+  installed=1
+fi
+
+if [ "$installed" -eq 0 ]; then
   install_dir="${HOME}/.local/bin"
   mkdir -p "$install_dir"
   mv "${tmpdir}/${BIN}" "${install_dir}/${BIN}"
