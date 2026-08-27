@@ -8,7 +8,7 @@ Tooling for preserving and backing up local AI assistant history. The first tool
 curl -fsSL https://raw.githubusercontent.com/Yuzhouboat/ai-history-hub/master/install.sh | sh
 ```
 
-This downloads the latest prebuilt `claude-backup` binary for your OS/arch (linux/darwin, amd64/arm64) from [GitHub Releases](https://github.com/Yuzhouboat/ai-history-hub/releases) — no Go toolchain required.
+This downloads the latest prebuilt `claude-backup` binary for your OS/arch (linux/darwin, amd64/arm64) from [GitHub Releases](https://github.com/Yuzhouboat/ai-history-hub/releases) — no Go toolchain required. It also installs `rclone` alongside it if `rclone` isn't already on your PATH, since `claude-backup` shells out to it for the actual transfer.
 
 ## Usage
 
